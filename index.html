@@ -1,6 +1,136 @@
-<div id="gameContainer">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Bubble Shooter - Kids Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #667eea;
+            background: -webkit-linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            position: fixed;
+            width: 100%;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: -webkit-flex;
+            display: flex;
+            -webkit-flex-direction: column;
+            flex-direction: column;
+        }
+
+        #gameHeader {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #gameCanvas {
+            -webkit-flex: 1;
+            flex: 1;
+            background: #87CEEB;
+            background: -webkit-linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            display: block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        #shooter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: #ff6b6b;
+            background: -webkit-radial-gradient(circle, #ff6b6b, #ee5a24);
+            background: radial-gradient(circle, #ff6b6b, #ee5a24);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 5;
+        }
+
+        #gameOver {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            -webkit-justify-content: center;
+            justify-content: center;
+            -webkit-align-items: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #gameOverContent {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        button {
+            background: #ff6b6b;
+            background: -webkit-linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            -webkit-appearance: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
         <div id="gameHeader">
-            🎯 Bubble Shooter 🎯
+            Bubble Shooter
         </div>
         
         <div id="gameUI">
@@ -15,34 +145,41 @@
 
     <div id="gameOver">
         <div id="gameOverContent">
-            <h2>🎉 Great Job! 🎉</h2>
+            <h2>Great Job!</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
             <button onclick="restartGame()">Play Again</button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
-        const gameOverElement = document.getElementById('gameOver');
-        const finalScoreElement = document.getElementById('finalScore');
+        // Compatibility fixes for older browsers
+        if (!window.requestAnimationFrame) {
+            window.requestAnimationFrame = window.webkitRequestAnimationFrame || 
+                                          window.mozRequestAnimationFrame || 
+                                          function(callback) { return setTimeout(callback, 1000/60); };
+        }
 
-        // Game state
-        let score = 0;
-        let level = 1;
-        let bubbles = [];
-        let targets = [];
-        let particles = [];
-        let gameRunning = true;
+        var canvas = document.getElementById('gameCanvas');
+        var ctx = canvas.getContext('2d');
+        var scoreElement = document.getElementById('score');
+        var levelElement = document.getElementById('level');
+        var gameOverElement = document.getElementById('gameOver');
+        var finalScoreElement = document.getElementById('finalScore');
+
+        // Game state - using var for compatibility
+        var score = 0;
+        var level = 1;
+        var bubbles = [];
+        var targets = [];
+        var particles = [];
+        var gameRunning = true;
 
         // Colors for bubbles and targets
-        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#fab1a0', '#fd79a8', '#a29bfe'];
+        var colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#fab1a0', '#fd79a8', '#a29bfe'];
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 60; // Account for header
+            canvas.height = window.innerHeight - 60;
         }
 
         function getRandomColor() {
@@ -50,7 +187,7 @@
         }
 
         function createTarget() {
-            const target = {
+            var target = {
                 x: Math.random() * (canvas.width - 60) + 30,
                 y: Math.random() * (canvas.height * 0.6) + 50,
                 radius: 25 + Math.random() * 15,
@@ -62,7 +199,7 @@
         }
 
         function createBubble(x, y, targetX, targetY) {
-            const bubble = {
+            var bubble = {
                 x: x,
                 y: y,
                 radius: 15,
@@ -72,7 +209,7 @@
                 speed: 8
             };
             
-            const distance = Math.sqrt(bubble.vx * bubble.vx + bubble.vy * bubble.vy);
+            var distance = Math.sqrt(bubble.vx * bubble.vx + bubble.vy * bubble.vy);
             bubble.vx = (bubble.vx / distance) * bubble.speed;
             bubble.vy = (bubble.vy / distance) * bubble.speed;
             
@@ -80,7 +217,7 @@
         }
 
         function createParticle(x, y, color) {
-            for (let i = 0; i < 8; i++) {
+            for (var i = 0; i < 8; i++) {
                 particles.push({
                     x: x,
                     y: y,
@@ -110,8 +247,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Update and draw bubbles
-            for (let i = bubbles.length - 1; i >= 0; i--) {
-                const bubble = bubbles[i];
+            for (var i = bubbles.length - 1; i >= 0; i--) {
+                var bubble = bubbles[i];
                 bubble.x += bubble.vx;
                 bubble.y += bubble.vy;
 
@@ -124,11 +261,11 @@
                 }
 
                 // Check collision with targets
-                for (let j = targets.length - 1; j >= 0; j--) {
-                    const target = targets[j];
-                    const dx = bubble.x - target.x;
-                    const dy = bubble.y - target.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                for (var j = targets.length - 1; j >= 0; j--) {
+                    var target = targets[j];
+                    var dx = bubble.x - target.x;
+                    var dy = bubble.y - target.y;
+                    var distance = Math.sqrt(dx * dx + dy * dy);
 
                     if (distance < bubble.radius + target.radius) {
                         // Hit!
@@ -144,7 +281,8 @@
             }
 
             // Update and draw targets
-            for (let target of targets) {
+            for (var k = 0; k < targets.length; k++) {
+                var target = targets[k];
                 target.x += target.vx;
                 target.y += target.vy;
 
@@ -160,18 +298,20 @@
             }
 
             // Update and draw particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const particle = particles[i];
+            for (var p = particles.length - 1; p >= 0; p--) {
+                var particle = particles[p];
                 particle.x += particle.vx;
                 particle.y += particle.vy;
                 particle.life--;
 
-                const alpha = particle.life / particle.maxLife;
-                ctx.fillStyle = particle.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                var alpha = particle.life / particle.maxLife;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = particle.color;
                 ctx.fillRect(particle.x, particle.y, 4, 4);
+                ctx.globalAlpha = 1;
 
                 if (particle.life <= 0) {
-                    particles.splice(i, 1);
+                    particles.splice(p, 1);
                 }
             }
 
@@ -181,22 +321,28 @@
                 levelElement.textContent = level;
                 
                 // Create more targets for next level
-                const targetCount = Math.min(3 + level, 10);
-                for (let i = 0; i < targetCount; i++) {
-                    setTimeout(() => createTarget(), i * 200);
+                var targetCount = Math.min(3 + level, 10);
+                for (var t = 0; t < targetCount; t++) {
+                    (function(index) {
+                        setTimeout(function() { createTarget(); }, index * 200);
+                    })(t);
                 }
             }
 
-            // End game if score reaches 500 (or adjust as needed)
+            // End game if score reaches 500
             if (score >= 500) {
                 endGame();
             }
+
+            // Continue game loop
+            requestAnimationFrame(updateGame);
         }
 
         function endGame() {
             gameRunning = false;
             finalScoreElement.textContent = score;
             gameOverElement.style.display = 'flex';
+            gameOverElement.style.display = '-webkit-flex';
         }
 
         function restartGame() {
@@ -212,51 +358,64 @@
             gameOverElement.style.display = 'none';
             
             // Create initial targets
-            for (let i = 0; i < 3; i++) {
+            for (var i = 0; i < 3; i++) {
                 createTarget();
             }
+            
+            updateGame();
         }
 
-        // Event listeners
-        canvas.addEventListener('click', (e) => {
+        // Handle clicks and touches
+        function handleInteraction(e) {
             if (!gameRunning) return;
             
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const shooterX = canvas.width / 2;
-            const shooterY = canvas.height - 40;
-            
-            createBubble(shooterX, shooterY, x, y);
-        });
-
-        canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!gameRunning) return;
             
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
+            var rect = canvas.getBoundingClientRect();
+            var x, y;
             
-            const shooterX = canvas.width / 2;
-            const shooterY = canvas.height - 40;
+            if (e.touches && e.touches.length > 0) {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                x = e.changedTouches[0].clientX - rect.left;
+                y = e.changedTouches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            var shooterX = canvas.width / 2;
+            var shooterY = canvas.height - 40;
             
             createBubble(shooterX, shooterY, x, y);
-        });
+        }
+
+        // Event listeners - comprehensive touch support
+        canvas.addEventListener('click', handleInteraction, false);
+        canvas.addEventListener('touchstart', handleInteraction, false);
+        canvas.addEventListener('touchend', function(e) { e.preventDefault(); }, false);
+        canvas.addEventListener('touchcancel', function(e) { e.preventDefault(); }, false);
+        canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, false);
+
+        // Prevent scrolling and bouncing on iOS
+        document.body.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
 
         window.addEventListener('resize', resizeCanvas);
 
         // Initialize game
-        resizeCanvas();
-        restartGame();
+        window.addEventListener('load', function() {
+            resizeCanvas();
+            restartGame();
+        });
 
-        // Game loop
-        setInterval(updateGame, 1000 / 60); // 60 FPS
-
-        // Register service worker for offline functionality
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgZXZlbnQgPT4ge30pOw==');
-        }
+        // Fallback initialization
+        setTimeout(function() {
+            if (canvas.width === 0) {
+                resizeCanvas();
+                restartGame();
+            }
+        }, 100);
     </script>
+</body>
+</html>
